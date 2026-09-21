@@ -30,6 +30,18 @@ public class Student {
     @Column(name = "roll_number", length = 30)
     private String rollNumber;
 
+    @Column(name = "library_card_no", length = 50, unique = true)
+    private String libraryCardNo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "library_card_status", length = 20)
+    private LibraryCardStatus libraryCardStatus; // ACTIVE / INACTIVE
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<IssueRecord> issueRecords = new ArrayList<>();
+
     @NotBlank(message = "First name is required")
     @Column(name = "first_name", nullable = false, length = 50)
     private String firstName;

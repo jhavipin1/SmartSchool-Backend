@@ -1,18 +1,12 @@
 package com.smartSchool.services.impl;
 
+import com.smartSchool.dtos.library.LibraryCardUpdateRequestDto;
+import com.smartSchool.dtos.library.StudentSearchRequestDto;
 import com.smartSchool.dtos.student.StudentRequestDto;
 import com.smartSchool.dtos.student.StudentResponseDto;
-import com.smartSchool.entities.ClassName;
-import com.smartSchool.entities.Parent;
-import com.smartSchool.entities.Section;
-import com.smartSchool.entities.Student;
-import com.smartSchool.entities.User;
+import com.smartSchool.entities.*;
 import com.smartSchool.enums.Gender;
-import com.smartSchool.repositories.ClassNameRepository;
-import com.smartSchool.repositories.ParentRepository;
-import com.smartSchool.repositories.SectionRepository;
-import com.smartSchool.repositories.StudentRepository;
-import com.smartSchool.repositories.UserRepository;
+import com.smartSchool.repositories.*;
 import com.smartSchool.services.StudentService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
@@ -20,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,17 +27,19 @@ public class StudentServiceImpl implements StudentService {
     private final SectionRepository sectionRepository;
     private final UserRepository userRepository;
     private final ParentRepository parentRepository;
+    private final LibraryCardAuditRepository auditRepository;
 
     public StudentServiceImpl(StudentRepository studentRepository,
                               ClassNameRepository classNameRepository,
                               SectionRepository sectionRepository,
                               UserRepository userRepository,
-                              ParentRepository parentRepository) {
+                              ParentRepository parentRepository, LibraryCardAuditRepository auditRepository) {
         this.studentRepository = studentRepository;
         this.classNameRepository = classNameRepository;
         this.sectionRepository = sectionRepository;
         this.userRepository = userRepository;
         this.parentRepository = parentRepository;
+        this.auditRepository = auditRepository;
     }
 
     @Override
@@ -226,6 +223,60 @@ public class StudentServiceImpl implements StudentService {
         return student;
     }
 
+
+    @Override
+    public List<StudentResponseDto> searchStudents(StudentSearchRequestDto dto) {
+        if (dto.getAdmissionNumber() != null) {
+            return studentRepository.findByAdmissionNumber(dto.getAdmissionNumber())
+                    .map(this::mapToDto).stream().toList();
+        }
+        if (dto.getRollNumber() != null) {
+            return studentRepository.findByRollNumber(dto.getRollNumber())
+                    .map(this::mapToDto).stream().toList();
+        }
+        if (dto.getName() != null) {
+            return studentRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(dto.getName(), dto.getName())
+                    .stream().map(this::mapToDto).toList();
+        }
+        return List.of();
+    }
+
+    @Override
+    public StudentResponseDto assignLibraryCard(Long studentId, LibraryCardUpdateRequestDto dto) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        student.setLibraryCardNo(dto.getLibraryCardNo());
+        student.setLibraryCardStatus(dto.getStatus());
+        studentRepository.save(student);
+
+        // --- Audit log ---
+        LibraryCardAudit audit = LibraryCardAudit.builder()
+                .studentId(student.getId())
+                .studentName(student.getFirstName() + " " + student.getLastName())
+                .libraryCardNo(dto.getLibraryCardNo())
+                .status(dto.getStatus())
+                .librarianId(getCurrentLibrarianId()) // from security context
+                .librarianName(getCurrentLibrarianName())
+                .actionTime(LocalDateTime.now())
+                .action("ASSIGN_CARD")
+                .build();
+        auditRepository.save(audit);
+
+        return mapToDto(student);
+    }
+
+    // Example helper methods
+    private Long getCurrentLibrarianId() {
+        // fetch from JWT / SecurityContext
+        return 101L;
+    }
+
+    private String getCurrentLibrarianName() {
+        return "Admin Librarian";
+    }
+
+
     private void updateStudentFields(Student student, StudentRequestDto dto) {
         student.setAdmissionNumber(dto.getAdmissionNumber());
         student.setRollNumber(dto.getRollNumber());
@@ -289,6 +340,8 @@ public class StudentServiceImpl implements StudentService {
                 .id(student.getId())
                 .admissionNumber(student.getAdmissionNumber())
                 .rollNumber(student.getRollNumber())
+                .libraryCardNo(student.getLibraryCardNo())
+                .libraryCardStatus(student.getLibraryCardStatus())
                 .firstName(student.getFirstName())
                 .middleName(student.getMiddleName())
                 .lastName(student.getLastName())

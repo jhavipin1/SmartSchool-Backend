@@ -3,6 +3,7 @@ package com.smartSchool.repositories;
 
 import com.smartSchool.entities.Student;
 import com.smartSchool.enums.Gender;
+import com.smartSchool.enums.LibraryCardStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -51,4 +53,12 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
             "LOWER(s.rollNumber) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
             "LOWER(s.email) LIKE LOWER(CONCAT('%', :query, '%'))")
     Page<Student> searchStudents(@Param("query") String query, Pageable pageable);
+
+    List<Student> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(String firstName, String lastName);
+
+    // Find student by library card number
+    Optional<Student> findByLibraryCardNo(String libraryCardNo);
+
+    // Find student by library card number AND status
+    Optional<Student> findByLibraryCardNoAndLibraryCardStatus(String libraryCardNo, LibraryCardStatus status);
 }

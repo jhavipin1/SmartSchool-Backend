@@ -1,5 +1,7 @@
 package com.smartSchool.services;
 
+import com.smartSchool.dtos.library.LibraryCardUpdateRequestDto;
+import com.smartSchool.dtos.library.StudentSearchRequestDto;
 import com.smartSchool.dtos.student.StudentRequestDto;
 import com.smartSchool.dtos.student.StudentResponseDto;
 import com.smartSchool.enums.Gender;
@@ -31,4 +33,7 @@ public interface StudentService {
     StudentResponseDto reassignClassAndSection(Long id, Long newClassId, Long newSectionId);
 
     void deleteStudent(Long id);
+     // Library
+    List<StudentResponseDto> searchStudents(StudentSearchRequestDto dto);
+    StudentResponseDto assignLibraryCard(Long studentId, LibraryCardUpdateRequestDto dto);
 }

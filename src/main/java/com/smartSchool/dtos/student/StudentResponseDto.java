@@ -15,6 +15,10 @@ public class StudentResponseDto {
     private Long id;
     private String admissionNumber;
     private String rollNumber;
+
+    private String libraryCardNo;
+    private LibraryCardStatus libraryCardStatus;
+
     private String firstName;
     private String middleName;
     private String lastName;
