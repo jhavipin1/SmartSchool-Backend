@@ -17,16 +17,14 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Rack {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
-    @NotBlank
+    @Id
+    @Column(name = "rack_code", nullable = false, unique = true)
     private String rackCode;
 
     private String location;
 
-    @OneToMany(mappedBy = "rackNumber", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "rack", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<Book> books = new ArrayList<>();
 }
-

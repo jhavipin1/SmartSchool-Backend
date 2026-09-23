@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface RackRepository extends JpaRepository<Rack, Long>, JpaSpecificationExecutor<Rack> {
+public interface RackRepository extends JpaRepository<Rack, String>, JpaSpecificationExecutor<Rack> {
 
     List<Rack> findByRackCodeContainingIgnoreCase(String rackCode);
 

@@ -1,4 +1,4 @@
-package com.smartSchool.dtos.library;
+package com.smartSchool.dtos.exam;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RackDto {
-    private String rackCode;
-    private String location;
+public class ExamTypeDTO {
+    private Long id;
+    private String typeName;
+    private Long examGroupId;
 }
-

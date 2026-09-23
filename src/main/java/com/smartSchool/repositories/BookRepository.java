@@ -20,6 +20,9 @@ public interface BookRepository extends JpaRepository<Book, Long>, JpaSpecificat
     // Relationship-based searches (navigate into entity fields)
     List<Book> findByAuthorContainingIgnoreCase(String author);
     List<Book> findByPublisherContainingIgnoreCase(String publisher);
-    List<Book> findByRackNumberContainingIgnoreCase(String rackNumber);
+    List<Book> findByRack_RackCodeContainingIgnoreCase(String rackCode);
+    List<Book> findByRack_RackCode(String rackCode);
+
+    boolean existsByRackRackCode(String rackCode);
 
 }

@@ -25,14 +25,16 @@ public class Book {
     @NotBlank(message = "Book title is required")
     private String title;
 
-    @Column(unique = true)
+    @Column(name = "book_number", unique = true)
     private String bookNumber;
 
+    @Column(name = "isbn_number")
     private String isbnNumber;
+
     private String publisher;
     private String author;
     private String subject;
-    private String rackNumber;
+
     @Column(name = "qty", nullable = false)
     @Min(value = 0, message = "Quantity cannot be negative")
     private Integer qty;
@@ -40,14 +42,16 @@ public class Book {
     @Column(name = "available_qty", nullable = false)
     @Min(value = 0, message = "Available quantity cannot be negative")
     private Integer availableQty;
+
     private Double price;
 
+    @Column(name = "post_date")
     private LocalDate postDate;
 
     @Column(length = 1000)
     private String description;
 
-    @ManyToOne
-    @JoinColumn(name = "rack_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rack_code", referencedColumnName = "rack_code")
     private Rack rack;
 }

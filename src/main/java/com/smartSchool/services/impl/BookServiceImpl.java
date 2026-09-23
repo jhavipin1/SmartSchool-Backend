@@ -81,7 +81,7 @@ public class BookServiceImpl implements BookService {
         }
         if (rackCode != null && !rackCode.isEmpty()) {
             spec = spec.and((root, query, cb) ->
-                    cb.like(cb.lower(root.join("rackNumber").get("rackCode")), "%" + rackCode.toLowerCase() + "%"));
+                    cb.like(cb.lower(root.join("rack").get("rackCode")), "%" + rackCode.toLowerCase() + "%"));
         }
 
         Page<Book> bookPage = bookRepository.findAll(spec, pageable);
@@ -128,6 +128,10 @@ public class BookServiceImpl implements BookService {
     }
 
     private BookResponseDto toDto(Book book) {
+        if (book == null) {
+            return null;
+        }
+
         return BookResponseDto.builder()
                 .id(book.getId())
                 .title(book.getTitle())
@@ -136,8 +140,9 @@ public class BookServiceImpl implements BookService {
                 .publisher(book.getPublisher())
                 .author(book.getAuthor())
                 .subject(book.getSubject())
-                .rackNumber(book.getRackNumber())
+                .rackCode(book.getRack() != null ? book.getRack().getRackCode() : null)
                 .qty(book.getQty())
+                .availableQty(book.getAvailableQty())
                 .price(book.getPrice())
                 .postDate(book.getPostDate())
                 .description(book.getDescription())

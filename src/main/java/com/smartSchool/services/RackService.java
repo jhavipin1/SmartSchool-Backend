@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface RackService {
     RackDto addRack(RackDto dto);
-    RackDto updateRack(Long id, RackDto dto);
-    void deleteRack(Long id);
+    RackDto updateRack(String rackCode, RackDto dto);
+    void deleteRack(String rackCode);
     Page<RackDto> searchRacks(String rackCode, String location, Pageable pageable);
 }

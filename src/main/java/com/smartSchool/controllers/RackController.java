@@ -21,13 +21,13 @@ public class RackController {
     }
 
     @PutMapping("/{id}")
-    public RackDto updateRack(@PathVariable Long id, @RequestBody RackDto dto) {
-        return rackService.updateRack(id, dto);
+    public RackDto updateRack(@PathVariable String rackCode, @RequestBody RackDto dto) {
+        return rackService.updateRack(rackCode, dto);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteRack(@PathVariable Long id) {
-        rackService.deleteRack(id);
+    public void deleteRack(@PathVariable String rackCode) {
+        rackService.deleteRack(rackCode);
     }
 
     @GetMapping("/search")

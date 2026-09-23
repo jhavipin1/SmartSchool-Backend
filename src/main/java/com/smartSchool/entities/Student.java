@@ -202,4 +202,11 @@ public class Student {
     @EqualsAndHashCode.Exclude
     @Builder.Default
     private List<Fee> fees = new ArrayList<>();
+
+    // --- Exam Relationship ---
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @Builder.Default
+    private List<StudentExam> studentExams = new ArrayList<>();
 }
