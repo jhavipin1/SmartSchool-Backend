@@ -58,7 +58,6 @@ public class Student {
     private LocalDate dateOfBirth;
 
     // --- Enum Mappings ---
-
     @Enumerated(EnumType.STRING)
     @Column(name = "gender", length = 20)
     private Gender gender;
@@ -80,7 +79,6 @@ public class Student {
     private House house;
 
     // --- Dynamic Table References ---
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id")
     private ClassName className;
@@ -90,7 +88,6 @@ public class Student {
     private Section section;
 
     // --- Contact & Additional Info ---
-
     @Column(name = "mobile_no", length = 15)
     private String mobileNo;
 
@@ -113,7 +110,6 @@ public class Student {
     private LocalDate measurementDate;
 
     // --- Guardian Details ---
-
     @Column(name = "father_name", length = 100)
     private String fatherName;
 
@@ -185,9 +181,8 @@ public class Student {
     private String note;
 
     // --- Relationships ---
-
     @NotNull
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL) // 🔑 Cascade ensures User auto-saves
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
     private User user;
 
@@ -196,7 +191,6 @@ public class Student {
     private Parent parent;
 
     // --- Fee Relationship ---
-
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

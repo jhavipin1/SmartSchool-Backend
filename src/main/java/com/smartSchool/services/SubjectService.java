@@ -1,9 +1,6 @@
 package com.smartSchool.services;
 
-
-
 import com.smartSchool.dtos.subject.*;
-
 import java.util.List;
 
 public interface SubjectService {

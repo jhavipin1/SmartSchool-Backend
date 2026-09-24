@@ -5,15 +5,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ExamSubjectDTO {
-    private Long id;
-    private Long subjectId;
-    private Long classId;
-    private Long sectionId;
-    private Long examTypeId;
-    private Integer maxMarks;
+public class ExamSetupBulkRequestDto {
+    private List<ExamSetupRequestDto> setups;
 }

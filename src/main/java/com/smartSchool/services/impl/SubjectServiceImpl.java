@@ -1,23 +1,26 @@
 package com.smartSchool.services.impl;
 
-
 import com.smartSchool.dtos.subject.*;
 import com.smartSchool.entities.Subject;
+
+import com.smartSchool.exceptions.ResourceNotFoundException;
 import com.smartSchool.repositories.SubjectRepository;
 import com.smartSchool.services.SubjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class SubjectServiceImpl implements SubjectService {
 
     private final SubjectRepository subjectRepository;
 
     @Override
+    @Transactional
     public SubjectResponseDto createSubject(SubjectRequestDto dto) {
         Subject subject = Subject.builder()
                 .name(dto.getName())
@@ -25,35 +28,34 @@ public class SubjectServiceImpl implements SubjectService {
                 .description(dto.getDescription())
                 .active(true)
                 .build();
-        subjectRepository.save(subject);
-        return mapToResponse(subject);
+        return mapToResponse(subjectRepository.save(subject));
     }
 
     @Override
+    @Transactional
     public SubjectResponseDto updateSubject(Long id, SubjectRequestDto dto) {
         Subject subject = subjectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Subject not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + id));
         subject.setName(dto.getName());
         subject.setCode(dto.getCode());
         subject.setDescription(dto.getDescription());
-        subjectRepository.save(subject);
-        return mapToResponse(subject);
+        return mapToResponse(subjectRepository.save(subject));
     }
 
     @Override
+    @Transactional
     public SubjectResponseDto updateSubjectStatus(Long id, SubjectStatusUpdateDto dto) {
         Subject subject = subjectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Subject not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + id));
         subject.setActive(dto.getActive());
-        subjectRepository.save(subject);
-        return mapToResponse(subject);
+        return mapToResponse(subjectRepository.save(subject));
     }
 
     @Override
     public SubjectResponseDto getSubjectById(Long id) {
-        Subject subject = subjectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Subject not found"));
-        return mapToResponse(subject);
+        return subjectRepository.findById(id)
+                .map(this::mapToResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + id));
     }
 
     @Override
@@ -61,11 +63,15 @@ public class SubjectServiceImpl implements SubjectService {
         return subjectRepository.findAll()
                 .stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
+    @Transactional
     public void deleteSubject(Long id) {
+        if (!subjectRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Subject not found with id: " + id);
+        }
         subjectRepository.deleteById(id);
     }
 

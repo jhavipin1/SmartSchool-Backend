@@ -40,8 +40,10 @@ public class StudentRequestDto {
     // Foreign Key IDs
     private Long classNameId;
     private Long sectionId;
-    private Long userId;
     private Long parentId;
+
+    private String username;
+    private String password;
 
     // Contact Details
     private String mobileNo;

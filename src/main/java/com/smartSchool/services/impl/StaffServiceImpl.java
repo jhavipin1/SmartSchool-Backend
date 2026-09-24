@@ -9,7 +9,9 @@ import com.smartSchool.services.StaffService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,17 +23,28 @@ public class StaffServiceImpl implements StaffService {
     private final DepartmentRepository departmentRepository;
     private final DesignationRepository designationRepository;
     private final UserRepository userRepository;
+    private final TeacherRepository teacherRepository; // Injected TeacherRepository
 
     @Override
+    @Transactional
     public StaffResponseDto createStaff(StaffRequestDto dto) {
         Staff staff = mapToEntity(dto);
-        return mapToResponse(staffRepository.save(staff));
+        Staff savedStaff = staffRepository.save(staff);
+
+        // Check if designation or role indicates Teacher
+        if (isTeacher(savedStaff)) {
+            createTeacherRecordIfNotExists(savedStaff);
+        }
+
+        return mapToResponse(savedStaff);
     }
 
     @Override
+    @Transactional
     public StaffResponseDto updateStaff(Long id, StaffRequestDto dto) {
         Staff staff = staffRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Staff not found"));
+
         staff.setFirstName(dto.getFirstName());
         staff.setLastName(dto.getLastName());
         staff.setPhone(dto.getPhone());
@@ -42,7 +55,15 @@ public class StaffServiceImpl implements StaffService {
                 .orElseThrow(() -> new RuntimeException("Designation not found")));
         staff.setUser(userRepository.findById(Math.toIntExact(dto.getUserId()))
                 .orElseThrow(() -> new RuntimeException("User not found")));
-        return mapToResponse(staffRepository.save(staff));
+
+        Staff updatedStaff = staffRepository.save(staff);
+
+        // Check if updated designation/role requires a Teacher entity
+        if (isTeacher(updatedStaff)) {
+            createTeacherRecordIfNotExists(updatedStaff);
+        }
+
+        return mapToResponse(updatedStaff);
     }
 
     @Override
@@ -61,16 +82,38 @@ public class StaffServiceImpl implements StaffService {
     }
 
     @Override
+    @Transactional
     public void deleteStaff(Long id) {
         staffRepository.deleteById(id);
     }
 
     @Override
+    @Transactional
     public StaffResponseDto updateStaffStatus(Long id, StaffStatusUpdateDto statusUpdateDto) {
         Staff staff = staffRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Staff not found"));
         staff.getUser().setActive(statusUpdateDto.getActive());
         return mapToResponse(staffRepository.save(staff));
+    }
+
+    // Helper method to determine if Staff is a Teacher
+    private boolean isTeacher(Staff staff) {
+        if (staff.getDesignation() != null && staff.getDesignation().getDesignationName() != null) {
+            return staff.getDesignation().getDesignationName().equalsIgnoreCase("Teacher");
+        }
+        return false;
+    }
+
+    // Helper method to create Teacher record idempotently
+    private void createTeacherRecordIfNotExists(Staff staff) {
+        boolean teacherExists = teacherRepository.existsByStaffId(staff.getId());
+        if (!teacherExists) {
+            Teacher teacher = Teacher.builder()
+                    .staff(staff)
+                    .subjects(Collections.emptyList())
+                    .build();
+            teacherRepository.save(teacher);
+        }
     }
 
     private StaffResponseDto mapToResponse(Staff staff) {
@@ -104,4 +147,3 @@ public class StaffServiceImpl implements StaffService {
                 .build();
     }
 }
-

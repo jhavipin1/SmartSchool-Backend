@@ -5,16 +5,22 @@ import com.smartSchool.dtos.library.StudentSearchRequestDto;
 import com.smartSchool.dtos.student.StudentRequestDto;
 import com.smartSchool.dtos.student.StudentResponseDto;
 import com.smartSchool.entities.*;
+import com.smartSchool.enums.FeePaymentStatus;
 import com.smartSchool.enums.Gender;
+import com.smartSchool.enums.RoleName;
 import com.smartSchool.repositories.*;
 import com.smartSchool.services.StudentService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,18 +34,25 @@ public class StudentServiceImpl implements StudentService {
     private final UserRepository userRepository;
     private final ParentRepository parentRepository;
     private final LibraryCardAuditRepository auditRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public StudentServiceImpl(StudentRepository studentRepository,
                               ClassNameRepository classNameRepository,
                               SectionRepository sectionRepository,
                               UserRepository userRepository,
-                              ParentRepository parentRepository, LibraryCardAuditRepository auditRepository) {
+                              ParentRepository parentRepository,
+                              LibraryCardAuditRepository auditRepository,
+                              RoleRepository roleRepository,
+                              PasswordEncoder passwordEncoder) {
         this.studentRepository = studentRepository;
         this.classNameRepository = classNameRepository;
         this.sectionRepository = sectionRepository;
         this.userRepository = userRepository;
         this.parentRepository = parentRepository;
         this.auditRepository = auditRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -154,24 +167,77 @@ public class StudentServiceImpl implements StudentService {
                     });
         }
 
-        if (dto.getUserId() != null) {
-            if (currentStudentId == null && studentRepository.existsByUserId(dto.getUserId())) {
-                throw new IllegalArgumentException("User ID " + dto.getUserId() + " is already assigned to another student.");
-            }
-        }
     }
 
     private Student mapToEntity(StudentRequestDto dto) {
-        User user = userRepository.findById(Math.toIntExact(dto.getUserId() != null ? dto.getUserId().longValue() : null))
-                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + dto.getUserId()));
-        ClassName className = dto.getClassNameId() != null ?
-                classNameRepository.findById(dto.getClassNameId().longValue()).orElse(null) : null;
+        String username = dto.getUsername() != null ? dto.getUsername() : dto.getAdmissionNumber();
+        String rawPassword = dto.getPassword() != null
+                ? dto.getPassword()
+                : dto.getDateOfBirth().format(DateTimeFormatter.ofPattern("ddMMyyyy"));
+        String email = dto.getEmail() != null ? dto.getEmail() : dto.getAdmissionNumber() + "@smartschool.com";
+        Role studentRole = roleRepository.findByName(RoleName.STUDENT)
+                .orElseThrow(() -> new EntityNotFoundException("Role STUDENT not found"));
+        User user = User.builder()
+                .fullName(dto.getFirstName() + " " + dto.getLastName())
+                .username(username)
+                .password(passwordEncoder.encode(rawPassword))
+                .email(email)
+                .role(studentRole)
+                .active(true)
+                .build();
 
-        Section section = dto.getSectionId() != null ?
-                sectionRepository.findById(dto.getSectionId().longValue()).orElse(null) : null;
+        userRepository.save(user);
 
-        Parent parent = dto.getParentId() != null ?
-                parentRepository.findById(dto.getParentId().longValue()).orElse(null) : null;
+        ClassName className = null;
+        if (dto.getClassNameId() != null) {
+            className = classNameRepository.findById(dto.getClassNameId())
+                    .orElseThrow(() -> new EntityNotFoundException("Class not found with ID: " + dto.getClassNameId()));
+        }
+
+        Section section = null;
+        if (dto.getSectionId() != null) {
+            section = sectionRepository.findById(dto.getSectionId())
+                    .orElseThrow(() -> new EntityNotFoundException("Section not found with ID: " + dto.getSectionId()));
+            if (className != null && !section.getClassName().getId().equals(className.getId())) {
+                throw new IllegalArgumentException("Section " + section.getId() + " does not belong to Class " + className.getId());
+            }
+        }
+
+        Parent parent = null;
+        if (dto.getFatherName() != null) {
+            parent = Parent.builder()
+                    .firstName(dto.getFatherName())
+                    .lastName(dto.getLastName()) // or father’s surname
+                    .phone(dto.getFatherPhone())
+                    .occupation(dto.getFatherOcc())
+                    .address(dto.getCurrentAddress())
+                    .user(user)
+                    .build();
+        } else if (dto.getMotherName() != null) {
+            parent = Parent.builder()
+                    .firstName(dto.getMotherName())
+                    .lastName(dto.getLastName())
+                    .phone(dto.getMotherPhone())
+                    .occupation(dto.getMotherOcc())
+                    .address(dto.getCurrentAddress())
+                    .user(user)
+                    .build();
+        } else if (dto.getGuardianName() != null) {
+            parent = Parent.builder()
+                    .firstName(dto.getGuardianName())
+                    .lastName(dto.getLastName())
+                    .phone(dto.getGuardianPhone())
+                    .occupation(dto.getGuardianOcc())
+                    .address(dto.getGuardianAddress())
+                    .user(user)
+                    .build();
+        }
+
+        if (parent != null) {
+            parentRepository.save(parent);
+        }
+
+
 
         Student student = Student.builder()
                 .admissionNumber(dto.getAdmissionNumber())
@@ -320,10 +386,18 @@ public class StudentServiceImpl implements StudentService {
         student.setNote(dto.getNote());
 
         if (dto.getClassNameId() != null) {
-            student.setClassName(classNameRepository.findById(dto.getClassNameId()).orElse(null));
+            ClassName className = classNameRepository.findById(dto.getClassNameId())
+                    .orElseThrow(() -> new EntityNotFoundException("Class not found with ID: " + dto.getClassNameId()));
+            student.setClassName(className);
         }
+
         if (dto.getSectionId() != null) {
-            student.setSection(sectionRepository.findById(dto.getSectionId()).orElse(null));
+            Section section = sectionRepository.findById(dto.getSectionId())
+                    .orElseThrow(() -> new EntityNotFoundException("Section not found with ID: " + dto.getSectionId()));
+            if (student.getClassName() != null && !section.getClassName().getId().equals(student.getClassName().getId())) {
+                throw new IllegalArgumentException("Section " + section.getId() + " does not belong to Class " + student.getClassName().getId());
+            }
+            student.setSection(section);
         }
         if (dto.getParentId() != null) {
             student.setParent(parentRepository.findById(dto.getParentId()).orElse(null));
@@ -353,8 +427,11 @@ public class StudentServiceImpl implements StudentService {
                 .bloodGroup(student.getBloodGroup())
                 .house(student.getHouse())
                 .classNameId(student.getClassName() != null ? student.getClassName().getId() : null)
+                .className(student.getClassName() != null ? student.getClassName().getClassName() : null)
                 .sectionId(student.getSection() != null ? student.getSection().getId() : null)
+                .sectionName(student.getSection() != null ? student.getSection().getSectionName() : null)
                 .userId(student.getUser() != null ? student.getUser().getId() : null)
+                .userUsername(student.getUser() != null ? student.getUser().getUsername() : null)
                 .parentId(student.getParent() != null ? student.getParent().getId() : null)
                 .mobileNo(student.getMobileNo())
                 .email(student.getEmail())

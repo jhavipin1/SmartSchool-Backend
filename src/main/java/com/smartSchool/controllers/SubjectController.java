@@ -2,15 +2,16 @@ package com.smartSchool.controllers;
 
 import com.smartSchool.dtos.subject.*;
 import com.smartSchool.services.SubjectService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/subjects")
+@RequestMapping("/api/v1/subjects")
 @RequiredArgsConstructor
 public class SubjectController {
 
@@ -18,7 +19,7 @@ public class SubjectController {
 
     @PostMapping
     public ResponseEntity<SubjectResponseDto> createSubject(@Valid @RequestBody SubjectRequestDto dto) {
-        return ResponseEntity.ok(subjectService.createSubject(dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(subjectService.createSubject(dto));
     }
 
     @PutMapping("/{id}")
@@ -49,4 +50,3 @@ public class SubjectController {
         return ResponseEntity.noContent().build();
     }
 }
-

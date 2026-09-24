@@ -9,11 +9,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ExamSubjectDTO {
-    private Long id;
-    private Long subjectId;
-    private Long classId;
-    private Long sectionId;
-    private Long examTypeId;
+public class ExamSetupRequestDto {
+    private String examGroupName;
+    private String examTypeName;
+    private String subjectName;
     private Integer maxMarks;
+    private String className;
+    private String sectionName;
 }
+

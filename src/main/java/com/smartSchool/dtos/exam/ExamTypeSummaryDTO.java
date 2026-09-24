@@ -13,6 +13,7 @@ public class ExamTypeSummaryDTO {
     private Long examTypeId;
     private String examTypeName;
     private Long classId;
+    private Long sectionId;
     private Long subjectId;
     private Double averageMarks;
     private Integer highestMarks;
