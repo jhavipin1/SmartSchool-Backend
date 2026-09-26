@@ -19,11 +19,9 @@ public class ExamGroup {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String name; // e.g. "Academic Year 2026-2027"
+    private String name; // e.g. "Annual", "First Term"
 
     @OneToMany(mappedBy = "examGroup", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     @Builder.Default
     private List<ExamType> examTypes = new ArrayList<>();
 }

@@ -24,55 +24,78 @@ VALUES
     ('Anita Roy', 'receptionist', 'receptionist@mail.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'RECEPTIONIST'))
 ON DUPLICATE KEY UPDATE email=VALUES(email);
 
+-- Insert Classes
 INSERT INTO classes (class_name)
 VALUES
-    ('NURSERY'), ('LKG'), ('UKG'), ('CLASS_1'), ('CLASS_2'),
-    ('CLASS_3'), ('CLASS_4'), ('CLASS_5'), ('CLASS_6'), ('CLASS_7'),
-    ('CLASS_8'), ('CLASS_9'), ('CLASS_10'), ('CLASS_11'), ('CLASS_12')
-ON DUPLICATE KEY UPDATE class_name=VALUES(class_name);
+    ('NURSERY'), ('LKG'), ('UKG'),
+    ('CLASS_1'), ('CLASS_2'), ('CLASS_3'),
+    ('CLASS_4'), ('CLASS_5'), ('CLASS_6'),
+    ('CLASS_7'), ('CLASS_8'), ('CLASS_9'),
+    ('CLASS_10'), ('CLASS_11'), ('CLASS_12')
+ON DUPLICATE KEY UPDATE class_name = VALUES(class_name);
 
+-- Insert Sections mapped to each Class
 INSERT INTO sections (section_name, class_name_id)
-SELECT
-    sec.sec_name,
-    c.id
+SELECT s.section_name, c.id
 FROM classes c
 CROSS JOIN (
-    SELECT 'A' AS sec_name UNION ALL
-    SELECT 'B' UNION ALL
-    SELECT 'C' UNION ALL
-    SELECT 'D' UNION ALL
-    SELECT 'E'
-) sec
-WHERE c.id IS NOT NULL
-ON DUPLICATE KEY UPDATE class_name_id = VALUES(class_name_id);
-
-INSERT INTO subjects (name, code, description, active)
-VALUES
-('Mathematics', 'SUB001', 'Covers algebra, geometry, trigonometry, and calculus basics', true),
-('Physics', 'SUB002', 'Fundamentals of mechanics, electricity, magnetism, and optics', true),
-('Chemistry', 'SUB003', 'Organic, inorganic, and physical chemistry concepts', true),
-('Biology', 'SUB004', 'Cell biology, genetics, human anatomy, and ecology', true),
-('English', 'SUB005', 'Grammar, literature, comprehension, and writing skills', true),
-('Hindi', 'SUB006', 'Grammar, literature, comprehension, and writing skills in Hindi', true),
-('Environmental Science', 'SUB007', 'Study of environment, ecosystems, and sustainability', true),
-('Computer Science', 'SUB008', 'Programming, algorithms, data structures, and databases', true),
-('History', 'SUB009', 'World history and Indian history overview', true),
-('Geography', 'SUB010', 'Physical geography, maps, and human geography', true),
-('Political Science', 'SUB011', 'Civics, constitution, and governance basics', true),
-('Economics', 'SUB012', 'Microeconomics, macroeconomics, and development economics', true),
-('Crafts', 'SUB013', 'Creative arts, crafts, and design projects', true),
-('Arts', 'SUB014', 'Drawing, painting, and visual arts', true),
-('Music', 'SUB015', 'Music theory, instruments, and practice', true),
-('Sports', 'SUB016', 'Physical education, sports science, and fitness', true),
-('Psychology', 'SUB017', 'Human behavior, cognition, and mental health basics', true),
-('Philosophy', 'SUB018', 'Philosophical ideas, ethics, and logic', true),
-('Astronomy', 'SUB019', 'Stars, planets, galaxies, and space science', true),
-('Statistics', 'SUB020', 'Probability, data analysis, and statistical methods', true)
+    SELECT 'A' AS section_name
+    UNION ALL SELECT 'B'
+) s
 ON DUPLICATE KEY UPDATE
-    name = VALUES(name),
-    code = VALUES(code),
+    section_name = VALUES(section_name),
+    class_name_id = VALUES(class_name_id);
+
+INSERT INTO exam_groups (name)
+VALUES
+('Annual'),
+('First Term'),
+('Second Term')
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- Step 2: Insert Exam Types for each Exam Group
+INSERT INTO exam_types (type_name, exam_group_id)
+SELECT 'Theory', eg.id FROM exam_groups eg WHERE eg.name = 'Annual' UNION ALL
+SELECT 'Practical', eg.id FROM exam_groups eg WHERE eg.name = 'Annual' UNION ALL
+SELECT 'Theory', eg.id FROM exam_groups eg WHERE eg.name = 'First Term' UNION ALL
+SELECT 'Practical', eg.id FROM exam_groups eg WHERE eg.name = 'First Term' UNION ALL
+SELECT 'Theory', eg.id FROM exam_groups eg WHERE eg.name = 'Second Term' UNION ALL
+SELECT 'Practical', eg.id FROM exam_groups eg WHERE eg.name = 'Second Term'
+ON DUPLICATE KEY UPDATE type_name = VALUES(type_name);
+
+-- Step 3: Insert Subjects mapped to Classes + Exam Types
+INSERT INTO subjects (name, code, description, active, class_id, exam_type_id, max_marks)
+SELECT
+    bs.name,
+    bs.code,
+    bs.description,
+    bs.active,
+    c.id AS class_id,
+    et.id AS exam_type_id,
+    CASE
+        WHEN eg.name IN ('First Term','Second Term') AND et.type_name = 'Theory' THEN 20
+        WHEN eg.name IN ('First Term','Second Term') AND et.type_name = 'Practical' THEN 20
+        WHEN eg.name = 'Annual' AND et.type_name = 'Theory' THEN 100
+        WHEN eg.name = 'Annual' AND et.type_name = 'Practical' THEN 50
+        ELSE 0
+    END AS max_marks
+FROM (
+    SELECT 'Mathematics' AS name, 'SUB001' AS code, 'Covers algebra, geometry, trigonometry, and calculus basics' AS description, true AS active UNION ALL
+    SELECT 'Science', 'SUB002', 'Fundamentals of Science', true UNION ALL
+    SELECT 'English', 'SUB003', 'Grammar, literature, comprehension, and writing skills', true UNION ALL
+    SELECT 'Hindi', 'SUB004', 'Grammar, literature, comprehension, and writing skills in Hindi', true UNION ALL
+    SELECT 'Computer Science', 'SUB005', 'Programming, algorithms, data structures, and databases', true UNION ALL
+    SELECT 'Arts', 'SUB006', 'Drawing, painting, and visual arts', true UNION ALL
+    SELECT 'Music', 'SUB007', 'Music theory, instruments, and practice', true UNION ALL
+    SELECT 'Sports', 'SUB008', 'Physical education, sports science, and fitness', true
+) bs
+CROSS JOIN classes c
+JOIN exam_types et ON et.id IS NOT NULL
+JOIN exam_groups eg ON eg.id = et.exam_group_id
+ON DUPLICATE KEY UPDATE
     description = VALUES(description),
-    active = VALUES(active);
+    max_marks = VALUES(max_marks);
+
 
 INSERT INTO departments (department_name, description)
 VALUES
@@ -93,9 +116,7 @@ VALUES
     ('PRINCIPAL', 'PRINCIPAL Designation'),
     ('VICE_PRINCIPAL', 'VICE_PRINCIPAL Designation'),
     ('HEAD_OF_DEPARTMENT', 'HEAD_OF_DEPARTMENT Designation'),
-    ('SENIOR_TEACHER', 'SENIOR_TEACHER Designation'),
-    ('FACULTY', 'FACULTY Designation'),
-    ('ASSISTANT_TEACHER', 'ASSISTANT_TEACHER Designation'),
+    ('TEACHER', 'TEACHER Designation'),
     ('FINANCE_MANAGER', 'FINANCE_MANAGER Designation'),
     ('ACCOUNTANT', 'ACCOUNTANT Designation'),
     ('RECEPTIONIST', 'RECEPTIONIST Designation'),
@@ -118,23 +139,23 @@ VALUES
     -- Grade/Class Specific Packages
     ('Regular (Quarterly)', 'Standard quarterly academic fee package'),
     ('Lump Sum (Annual)', 'Discounted single-payment annual fee package'),
-    
+
     -- Term & Monthly Schedules
     ('Quarter 1 (Apr - Jun)', 'First Quarter Fees due in April'),
     ('Quarter 2 (Jul - Sep)', 'Second Quarter Fees due in July'),
     ('Quarter 3 (Oct - Dec)', 'Third Quarter Fees due in October'),
     ('Quarter 4 (Jan - Mar)', 'Fourth Quarter Fees due in January'),
     ('March Settlement Fees', 'End-of-year balance and clearance fees'),
-    
+
     -- Optional & Ancillary Services
     ('Transport / Bus Fees', 'Distance-based slab fees for school transport'),
     ('Hostel & Boarding', 'Residential and mess charges'),
-    
+
     -- One-Time & Miscellaneous
     ('New Admission Package', 'One-time charges for newly admitted students'),
     ('Examination & Assessment', 'Annual and board examination charges'),
     ('Concessions & Discounts', 'Fee waivers, staff child discount, sibling discount')
-ON DUPLICATE KEY UPDATE 
+ON DUPLICATE KEY UPDATE
     description = VALUES(description);
 
 INSERT INTO fee_types (fee_group, name, code, description)
@@ -163,10 +184,15 @@ VALUES
     ('Concessions & Discounts', 'Sibling Concession', 'DISC-SIBLING', 'Fee discount applicable for second child'),
     ('Concessions & Discounts', 'Staff Ward Discount', 'DISC-STAFF', 'Fee concession for children of school employees'),
     ('Concessions & Discounts', 'Merit Scholarship', 'DISC-MERIT', 'Academic excellence scholarship discount')
-ON DUPLICATE KEY UPDATE 
+ON DUPLICATE KEY UPDATE
     fee_group = VALUES(fee_group),
     name = VALUES(name),
     description = VALUES(description);
+
+INSERT INTO leave_types (name) VALUES
+('Medical Leave'),('Casual Leave'),('Maternity Leave'),('Sick Leave'),
+('Mandatory Leave'),('Half Day Leave'),('Holiday'),
+('Paternity Leave'),('Study Leave'),('Bereavement Leave');
 
 INSERT INTO racks (rack_code, location)
 VALUES
@@ -192,7 +218,7 @@ VALUES
 ('RACK-E4', 'Fifth Floor - Statistics Section')
 ON DUPLICATE KEY UPDATE
     rack_code = VALUES(rack_code),
-    location = VALUES(location);	
+    location = VALUES(location);
 
 INSERT INTO books (
     title, book_number, isbn_number, publisher, author, subject, rack_number,
@@ -251,556 +277,6 @@ ON DUPLICATE KEY UPDATE
     price = VALUES(price),
     post_date = VALUES(post_date),
     description = VALUES(description),
-    rack_id = VALUES(rack_id);	
+    rack_id = VALUES(rack_id);
 
-
----------------------------------------------------------------------------------------------
-
-
-INSERT INTO homeworks (
-    class_id, section_id, subject_id,
-    homework_date, submission_date, evaluation_date,
-    max_marks, description, document_path, created_by, active
-)
-VALUES
--- Class 10A Mathematics Homework
-(
- (SELECT id FROM classes WHERE class_name='CLASS_10' LIMIT 1),
- (SELECT s.id FROM sections s JOIN classes c ON s.class_name_id=c.id WHERE c.class_name='CLASS_10' AND s.section_name='A' LIMIT 1),
- (SELECT id FROM subjects WHERE name='Mathematics' LIMIT 1),
- '2026-09-20','2026-09-25',NULL,
- 50,'Solve algebra and geometry problems','/docs/homework/math_class10A.pdf','Teacher Sharma',true
-),
--- Class 9B English Homework
-(
- (SELECT id FROM classes WHERE class_name='CLASS_9' LIMIT 1),
- (SELECT s.id FROM sections s JOIN classes c ON s.class_name_id=c.id WHERE c.class_name='CLASS_9' AND s.section_name='B' LIMIT 1),
- (SELECT id FROM subjects WHERE name='English' LIMIT 1),
- '2026-09-21','2026-09-26',NULL,
- 30,'Write an essay on environmental conservation','/docs/homework/english_class9B.pdf','Teacher Das',true
-),
--- Class 8A Science Homework
-(
- (SELECT id FROM classes WHERE class_name='CLASS_8' LIMIT 1),
- (SELECT s.id FROM sections s JOIN classes c ON s.class_name_id=c.id WHERE c.class_name='CLASS_8' AND s.section_name='A' LIMIT 1),
- (SELECT id FROM subjects WHERE name='Physics' LIMIT 1),
- '2026-09-19','2026-09-24','2026-09-27',
- 40,'Prepare notes on Newton’s Laws of Motion','/docs/homework/physics_class8A.pdf','Teacher Gupta',true
-),
--- Class 10B Chemistry Homework
-(
- (SELECT id FROM classes WHERE class_name='CLASS_10' LIMIT 1),
- (SELECT s.id FROM sections s JOIN classes c ON s.class_name_id=c.id WHERE c.class_name='CLASS_10' AND s.section_name='B' LIMIT 1),
- (SELECT id FROM subjects WHERE name='Chemistry' LIMIT 1),
- '2026-09-18','2026-09-23','2026-09-26',
- 50,'Lab report on acids and bases','/docs/homework/chemistry_class10B.pdf','Teacher Mehta',true
-),
--- Class 9A History Homework
-(
- (SELECT id FROM classes WHERE class_name='CLASS_9' LIMIT 1),
- (SELECT s.id FROM sections s JOIN classes c ON s.class_name_id=c.id WHERE c.class_name='CLASS_9' AND s.section_name='A' LIMIT 1),
- (SELECT id FROM subjects WHERE name='History' LIMIT 1),
- '2026-09-17','2026-09-22','2026-09-25',
- 25,'Write a summary of the Mughal Empire','/docs/homework/history_class9A.pdf','Teacher Roy',true
-)
-ON DUPLICATE KEY UPDATE
-    subject_id = VALUES(subject_id),
-    homework_date = VALUES(homework_date),
-    submission_date = VALUES(submission_date),
-    evaluation_date = VALUES(evaluation_date),
-    max_marks = VALUES(max_marks),
-    description = VALUES(description),
-    document_path = VALUES(document_path),
-    created_by = VALUES(created_by),
-    active = VALUES(active);
----------------
-
--- Departments
-
-
--- Designations
-
-
-
-
-
--- =============================================================================
--- 4. SEED PARENT USERS & PARENTS
--- =============================================================================
-INSERT INTO users (full_name, username, email, password, active, role_id)
-VALUES
-    ('Ramesh Kumar', 'parent1', 'parent1@smartschool.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'PARENT')),
-    ('Sunita Devi', 'parent2', 'parent2@smartschool.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'PARENT')),
-    ('Vikram Singh', 'parent3', 'parent3@smartschool.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'PARENT')),
-    ('Anil Mehta', 'parent4', 'parent4@smartschool.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'PARENT')),
-    ('Pooja Sharma', 'parent5', 'parent5@smartschool.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'PARENT'))
-ON DUPLICATE KEY UPDATE email=VALUES(email);
-
-INSERT INTO parents (first_name, last_name, phone, occupation, address, user_id)
-SELECT 'Ramesh', 'Kumar', '9876543201', 'Engineer', 'New Delhi', (SELECT id FROM users WHERE username = 'parent1')
-UNION ALL SELECT 'Sunita', 'Devi', '9876543202', 'Doctor', 'Noida', (SELECT id FROM users WHERE username = 'parent2')
-UNION ALL SELECT 'Vikram', 'Singh', '9876543203', 'Business', 'Gurugram', (SELECT id FROM users WHERE username = 'parent3')
-UNION ALL SELECT 'Anil', 'Mehta', '9876543204', 'Accountant', 'Delhi', (SELECT id FROM users WHERE username = 'parent4')
-UNION ALL SELECT 'Pooja', 'Sharma', '9876543205', 'Teacher', 'Faridabad', (SELECT id FROM users WHERE username = 'parent5')
-ON DUPLICATE KEY UPDATE phone=VALUES(phone);
-
-
--- =============================================================================
--- 5. SEED STAFF USERS & STAFF MEMBERS
--- =============================================================================
-INSERT INTO users (full_name, username, email, password, active, role_id)
-VALUES
-    ('Aarav Sharma', 'staff1', 'staff1@smartschool.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'TEACHER')),
-    ('Neha Kapoor', 'staff2', 'staff2@smartschool.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'TEACHER')),
-    ('Rohan Verma', 'staff3', 'staff3@smartschool.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'TEACHER')),
-    ('Simran Kaur', 'staff4', 'staff4@smartschool.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'TEACHER')),
-    ('Alok Nath', 'staff5', 'staff5@smartschool.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'TEACHER'))
-ON DUPLICATE KEY UPDATE email=VALUES(email);
-
-INSERT INTO staff_members (employee_id, first_name, last_name, phone, department_id, designation_id, joining_date, user_id)
-SELECT 'EMP001', 'Aarav', 'Sharma', '9123456701', (SELECT id FROM departments WHERE department_name = 'ACADEMIC'), (SELECT id FROM designations WHERE designation_name = 'HEAD_OF_DEPARTMENT'), CURRENT_DATE, (SELECT id FROM users WHERE username = 'staff1')
-UNION ALL SELECT 'EMP002', 'Neha', 'Kapoor', '9123456702', (SELECT id FROM departments WHERE department_name = 'ADMINISTRATION'), (SELECT id FROM designations WHERE designation_name = 'PRINCIPAL'), CURRENT_DATE - INTERVAL 2 MONTH, (SELECT id FROM users WHERE username = 'staff2')
-UNION ALL SELECT 'EMP003', 'Rohan', 'Verma', '9123456703', (SELECT id FROM departments WHERE department_name = 'FINANCE'), (SELECT id FROM designations WHERE designation_name = 'FINANCE_MANAGER'), CURRENT_DATE - INTERVAL 4 MONTH, (SELECT id FROM users WHERE username = 'staff3')
-UNION ALL SELECT 'EMP004', 'Simran', 'Kaur', '9123456704', (SELECT id FROM departments WHERE department_name = 'FRONT_OFFICE'), (SELECT id FROM designations WHERE designation_name = 'RECEPTIONIST'), CURRENT_DATE - INTERVAL 6 MONTH, (SELECT id FROM users WHERE username = 'staff4')
-UNION ALL SELECT 'EMP005', 'Alok', 'Nath', '9123456705', (SELECT id FROM departments WHERE department_name = 'LIBRARY'), (SELECT id FROM designations WHERE designation_name = 'LIBRARIAN'), CURRENT_DATE - INTERVAL 8 MONTH, (SELECT id FROM users WHERE username = 'staff5')
-ON DUPLICATE KEY UPDATE employee_id=VALUES(employee_id);
-
-
--- =============================================================================
--- 6. SEED STUDENT USERS & STUDENTS
--- Exact join on classes and sections ensures valid class_id and section_id
--- =============================================================================
-INSERT INTO students (
-    admission_number, roll_number, library_card_no, library_card_status,
-    first_name, middle_name, last_name, date_of_birth,
-    gender, category, religion, blood_group, house,
-    class_id, section_id, user_id, parent_id,
-    mobile_no, email, admission_date, height, weight, measurement_date,
-    father_name, father_phone, father_occ,
-    mother_name, mother_phone, mother_occ,
-    guardian_is, guardian_name, guardian_relation, guardian_email, guardian_phone, guardian_occ, guardian_address,
-    current_address, permanent_address,
-    bank_account_no, bank_name, ifsc_code,
-    national_identification_no, local_identification_no,
-    rte, previous_school, note
-)
-VALUES
--- ADM001
-(
-    'ADM001','101','00L1','ACTIVE',
-    'Ayaan',NULL,'Kumar','2010-01-01',
-    'MALE','GENERAL','HINDUISM','O_POSITIVE','RED',
-    (SELECT id FROM classes WHERE class_name='CLASS_10' LIMIT 1),
-    (SELECT s.id FROM sections s JOIN classes c ON s.class_name_id=c.id WHERE c.class_name='CLASS_10' AND s.section_name='A' LIMIT 1),
-    (SELECT id FROM users WHERE username='student_user_1' LIMIT 1),
-    (SELECT id FROM parents WHERE phone='9876543201' LIMIT 1),
-    '9876543201','student1@smartschool.com','2021-06-01',NULL,NULL,NULL,
-    'Father Kumar','9876543201','Engineer',
-    'Mother Kumar','9876543209','Teacher',
-    'Father','Guardian Kumar','Father','guardian1@smartschool.com','9876543210','Business','Guardian Address 1',
-    'Current Address 1','Permanent Address 1',
-    '1234567890','Bank A','IFSC001',
-    'NID001','LID001',
-    'Y','Previous School A','Note A'
-),
--- ADM002
-(
-    'ADM002','102','00L2','ACTIVE',
-    'Ananya',NULL,'Devi','2010-04-11',
-    'FEMALE','GENERAL','HINDUISM','O_POSITIVE','RED',
-    (SELECT id FROM classes WHERE class_name='CLASS_9' LIMIT 1),
-    (SELECT s.id FROM sections s JOIN classes c ON s.class_name_id=c.id WHERE c.class_name='CLASS_9' AND s.section_name='B' LIMIT 1),
-    (SELECT id FROM users WHERE username='student_user_2' LIMIT 1),
-    (SELECT id FROM parents WHERE phone='9876543202' LIMIT 1),
-    '9876543202','student2@smartschool.com','2021-06-01',NULL,NULL,NULL,
-    'Father Devi','9876543202','Doctor',
-    'Mother Devi','9876543212','Homemaker',
-    'Mother','Guardian Devi','Mother','guardian2@smartschool.com','9876543213','Business','Guardian Address 2',
-    'Current Address 2','Permanent Address 2',
-    '2234567890','Bank B','IFSC002',
-    'NID002','LID002',
-    'Y','Previous School B','Note B'
-),
--- ADM003
-(
-    'ADM003','103','00L3','ACTIVE',
-    'Kabir',NULL,'Singh','2010-07-20',
-    'MALE','GENERAL','HINDUISM','O_POSITIVE','RED',
-    (SELECT id FROM classes WHERE class_name='CLASS_8' LIMIT 1),
-    (SELECT s.id FROM sections s JOIN classes c ON s.class_name_id=c.id WHERE c.class_name='CLASS_8' AND s.section_name='A' LIMIT 1),
-    (SELECT id FROM users WHERE username='student_user_3' LIMIT 1),
-    (SELECT id FROM parents WHERE phone='9876543203' LIMIT 1),
-    '9876543203','student3@smartschool.com','2021-06-01',NULL,NULL,NULL,
-    'Father Singh','9876543203','Lawyer',
-    'Mother Singh','9876543214','Teacher',
-    'Father','Guardian Singh','Father','guardian3@smartschool.com','9876543215','Business','Guardian Address 3',
-    'Current Address 3','Permanent Address 3',
-    '3234567890','Bank C','IFSC003',
-    'NID003','LID003',
-    'Y','Previous School C','Note C'
-),
--- ADM004
-(
-    'ADM004','104','00L4','ACTIVE',
-    'Isha',NULL,'Mehta','2010-10-28',
-    'FEMALE','GENERAL','HINDUISM','O_POSITIVE','RED',
-    (SELECT id FROM classes WHERE class_name='CLASS_10' LIMIT 1),
-    (SELECT s.id FROM sections s JOIN classes c ON s.class_name_id=c.id WHERE c.class_name='CLASS_10' AND s.section_name='B' LIMIT 1),
-    (SELECT id FROM users WHERE username='student_user_4' LIMIT 1),
-    (SELECT id FROM parents WHERE phone='9876543204' LIMIT 1),
-    '9876543204','student4@smartschool.com','2021-06-01',NULL,NULL,NULL,
-    'Father Mehta','9876543204','Engineer',
-    'Mother Mehta','9876543216','Doctor',
-    'Father','Guardian Mehta','Father','guardian4@smartschool.com','9876543217','Business','Guardian Address 4',
-    'Current Address 4','Permanent Address 4',
-    '4234567890','Bank D','IFSC004',
-    'NID004','LID004',
-    'Y','Previous School D','Note D'
-),
--- ADM005
-(
-    'ADM005','105','00L5','ACTIVE',
-    'Vihaan',NULL,'Sharma','2011-02-05',
-    'MALE','GENERAL','HINDUISM','O_POSITIVE','RED',
-    (SELECT id FROM classes WHERE class_name='CLASS_9' LIMIT 1),
-    (SELECT s.id FROM sections s JOIN classes c ON s.class_name_id=c.id WHERE c.class_name='CLASS_9' AND s.section_name='A' LIMIT 1),
-    (SELECT id FROM users WHERE username='student_user_5' LIMIT 1),
-    (SELECT id FROM parents WHERE phone='9876543205' LIMIT 1),
-    '9876543205','student5@smartschool.com','2021-06-01',NULL,NULL,NULL,
-    'Father Sharma','9876543205','Businessman',
-    'Mother Sharma','9876543218','Teacher',
-    'Father','Guardian Sharma','Father','guardian5@smartschool.com','9876543219','Business','Guardian Address 5',
-    'Current Address 5','Permanent Address 5',
-    '5234567890','Bank E','IFSC005',
-    'NID005','LID005',
-    'Y','Previous School E','Note E'
-)
-ON DUPLICATE KEY UPDATE
-    roll_number = VALUES(roll_number),
-    library_card_no = VALUES(library_card_no),
-    library_card_status = VALUES(library_card_status),
-    first_name = VALUES(first_name),
-    middle_name = VALUES(middle_name),
-    last_name = VALUES(last_name),
-    date_of_birth = VALUES(date_of_birth),
-    gender = VALUES(gender),
-    category = VALUES(category),
-    religion = VALUES(religion),
-    blood_group = VALUES(blood_group),
-    house = VALUES(house),
-    class_id = VALUES(class_id),
-    section_id = VALUES(section_id),
-    user_id = VALUES(user_id),
-    parent_id = VALUES(parent_id),
-    mobile_no = VALUES(mobile_no),
-    email = VALUES(email),
-    admission_date = VALUES(admission_date),
-    height = VALUES(height),
-    weight = VALUES(weight),
-    measurement_date = VALUES(measurement_date),
-    father_name = VALUES(father_name),
-    father_phone = VALUES(father_phone),
-    father_occ = VALUES(father_occ),
-    mother_name = VALUES(mother_name),
-    mother_phone = VALUES(mother_phone),
-    mother_occ = VALUES(mother_occ),
-    guardian_is = VALUES(guardian_is),
-    guardian_name = VALUES(guardian_name),
-    guardian_relation = VALUES(guardian_relation),
-    guardian_email = VALUES(guardian_email),
-    guardian_phone = VALUES(guardian_phone),
-    guardian_occ = VALUES(guardian_occ),
-    guardian_address = VALUES(guardian_address),
-    current_address = VALUES(current_address),
-    permanent_address = VALUES(permanent_address),
-    bank_account_no = VALUES(bank_account_no),
-    bank_name = VALUES(bank_name),
-    ifsc_code = VALUES(ifsc_code),
-    national_identification_no = VALUES(national_identification_no),
-    local_identification_no = VALUES(local_identification_no),
-    rte = VALUES(rte),
-    previous_school = VALUES(previous_school),
-    note = VALUES(note);
-
-
-
--- =============================================================================
--- 7. SEED FEE MANAGEMENT ENTITIES
--- =============================================================================
-
--- Fee Discounts
-
-
--- =============================================================================
--- 8. SEED FEES (Strict INNER JOINs resolve non-null Foreign Key IDs)
--- =============================================================================
-INSERT INTO fees (
-    student_id, fee_group_id, fee_type_id, fee_discount_id,
-    due_date, amount, paid_amount, fine_amount, discount_amount, status, description
-)
-SELECT
-    s.id AS student_id,
-    fg.id AS fee_group_id,
-    ft.id AS fee_type_id,
-    fd.id AS fee_discount_id,
-    f_data.due_date,
-    f_data.amount,
-    f_data.paid_amount,
-    f_data.fine_amount,
-    f_data.discount_amount,
-    f_data.status,
-    f_data.description
-FROM (
-    SELECT 'ADM001' AS adm_no, 'Fees' AS group_name, 'admission-fees' AS type_code, NULL AS disc_code, '2026-04-15' AS due_date, 5000.00 AS amount, 5000.00 AS paid_amount, 0.00 AS fine_amount, 0.00 AS discount_amount, 'PAID' AS status, 'Initial Admission Fee' AS description
-    UNION ALL
-    SELECT 'ADM001', 'Fees', 'apr-month-fees', 'rksdisc01', '2026-04-30', 2500.00, 2400.00, 0.00, 100.00, 'PAID', 'April Monthly Fee with discount'
-    UNION ALL
-    SELECT 'ADM002', 'Fees', '1-installment-fees', 'sibling-disc', '2026-05-10', 12000.00, 6000.00, 0.00, 300.00, 'PARTIAL', 'First Installment Fee'
-    UNION ALL
-    SELECT 'ADM003', 'Exam', 'exam-fees', NULL, '2026-03-15', 1500.00, 0.00, 100.00, 0.00, 'OVERDUE', 'Mid-Term Exam Fee'
-    UNION ALL
-    SELECT 'ADM004', 'Fees', 'Bus-fees', NULL, '2026-06-01', 1800.00, 0.00, 0.00, 0.00, 'UNPAID', 'Quarterly Transport Fee'
-    UNION ALL
-    SELECT 'ADM005', 'Discount', 'lumpsum-fees', 'cls-top-disc', '2026-04-10', 35000.00, 0.00, 0.00, 35000.00, 'PAID', 'Annual Lump Sum Fee (Full Topper Discount)'
-) f_data
-INNER JOIN students s ON s.admission_number = f_data.adm_no
-INNER JOIN fee_groups fg ON fg.name = f_data.group_name
-INNER JOIN fee_types ft ON ft.code = f_data.type_code
-LEFT JOIN fee_discounts fd ON fd.discount_code = f_data.disc_code;
-
---------------------
----Issue records
-----------------
-INSERT INTO issue_records (
-    library_card_no, student_id, book_id, issue_date, due_date, return_date, status
-)
-VALUES
--- Ayaan Kumar issues Mathematics Grade 10
-('00L1',
- (SELECT id FROM students WHERE admission_number='ADM001' LIMIT 1),
- (SELECT id FROM books WHERE book_number='B001' LIMIT 1),
- '2026-09-01','2026-09-21',NULL,'ISSUED'),
-
--- Ananya Devi issues English Reader
-('00L2',
- (SELECT id FROM students WHERE admission_number='ADM002' LIMIT 1),
- (SELECT id FROM books WHERE book_number='B005' LIMIT 1),
- '2026-09-02','2026-09-22',NULL,'ISSUED'),
-
--- Kabir Singh issues Hindi Vyakaran and already returned
-('00L3',
- (SELECT id FROM students WHERE admission_number='ADM003' LIMIT 1),
- (SELECT id FROM books WHERE book_number='B006' LIMIT 1),
- '2026-08-15','2026-09-01','2026-09-01','RETURNED'),
-
--- Isha Mehta issues Environmental Science
-('00L4',
- (SELECT id FROM students WHERE admission_number='ADM004' LIMIT 1),
- (SELECT id FROM books WHERE book_number='B007' LIMIT 1),
- '2026-09-05','2026-09-25',NULL,'ISSUED'),
-
--- Vihaan Sharma issues Computer Science Basics
-('00L5',
- (SELECT id FROM students WHERE admission_number='ADM005' LIMIT 1),
- (SELECT id FROM books WHERE book_number='B008' LIMIT 1),
- '2026-09-10','2026-09-30',NULL,'ISSUED')
-ON DUPLICATE KEY UPDATE
-    library_card_no = VALUES(library_card_no),
-    student_id = VALUES(student_id),
-    book_id = VALUES(book_id),
-    issue_date = VALUES(issue_date),
-    due_date = VALUES(due_date),
-    return_date = VALUES(return_date),
-    status = VALUES(status);
-
--------------
-----Attendance -
-
--------------
-
--- Assuming student IDs 1–5 exist in your students table
-
-INSERT INTO attendance (
-    attendance_date, status, entry_time, exit_time, note, source,
-    student_id, leave_start_date, leave_end_date, leave_status
-) VALUES
--- Student 1 (ADM001 - Ayaan Kumar)
-(CURDATE() - INTERVAL 4 DAY, 'PRESENT', '08:45:00', '15:30:00', 'On time', 'Manual', 1, NULL, NULL, NULL),
-(CURDATE() - INTERVAL 3 DAY, 'PRESENT', '08:50:00', '15:30:00', 'Late by 5 min', 'RFID', 1, NULL, NULL, NULL),
-(CURDATE() - INTERVAL 2 DAY, 'ABSENT', NULL, NULL, 'Sick leave', 'Manual', 1, CURDATE() - INTERVAL 2 DAY, CURDATE() - INTERVAL 2 DAY, 'Approved'),
-(CURDATE() - INTERVAL 1 DAY, 'PRESENT', '08:40:00', '15:30:00', 'Good attendance', 'Biometric', 1, NULL, NULL, NULL),
-(CURDATE(), 'PRESENT', '08:45:00', '15:30:00', 'On time', 'Manual', 1, NULL, NULL, NULL),
-
--- Student 2 (ADM002 - Ananya Devi)
-(CURDATE() - INTERVAL 4 DAY, 'PRESENT', '08:35:00', '15:30:00', 'Excellent punctuality', 'RFID', 2, NULL, NULL, NULL),
-(CURDATE() - INTERVAL 3 DAY, 'ABSENT', NULL, NULL, 'Family function', 'Manual', 2, CURDATE() - INTERVAL 3 DAY, CURDATE() - INTERVAL 3 DAY, 'Pending'),
-(CURDATE() - INTERVAL 2 DAY, 'PRESENT', '08:50:00', '15:30:00', 'Late entry', 'Biometric', 2, NULL, NULL, NULL),
-(CURDATE() - INTERVAL 1 DAY, 'PRESENT', '08:40:00', '15:30:00', 'On time', 'Manual', 2, NULL, NULL, NULL),
-(CURDATE(), 'PRESENT', '08:45:00', '15:30:00', 'On time', 'RFID', 2, NULL, NULL, NULL),
-
--- Student 3 (ADM003 - Kabir Singh)
-(CURDATE() - INTERVAL 4 DAY, 'PRESENT', '08:50:00', '15:30:00', 'Late entry', 'Manual', 3, NULL, NULL, NULL),
-(CURDATE() - INTERVAL 3 DAY, 'PRESENT', '08:45:00', '15:30:00', 'On time', 'RFID', 3, NULL, NULL, NULL),
-(CURDATE() - INTERVAL 2 DAY, 'PRESENT', '08:40:00', '15:30:00', 'Good attendance', 'Biometric', 3, NULL, NULL, NULL),
-(CURDATE() - INTERVAL 1 DAY, 'ABSENT', NULL, NULL, 'Medical leave', 'Manual', 3, CURDATE() - INTERVAL 1 DAY, CURDATE() - INTERVAL 1 DAY, 'Approved'),
-(CURDATE(), 'PRESENT', '08:45:00', '15:30:00', 'On time', 'RFID', 3, NULL, NULL, NULL),
-
--- Student 4 (ADM004 - Isha Mehta)
-(CURDATE() - INTERVAL 4 DAY, 'ABSENT', NULL, NULL, 'Travel leave', 'Manual', 4, CURDATE() - INTERVAL 4 DAY, CURDATE() - INTERVAL 4 DAY, 'Approved'),
-(CURDATE() - INTERVAL 3 DAY, 'PRESENT', '08:40:00', '15:30:00', 'On time', 'Biometric', 4, NULL, NULL, NULL),
-(CURDATE() - INTERVAL 2 DAY, 'PRESENT', '08:45:00', '15:30:00', 'On time', 'Manual', 4, NULL, NULL, NULL),
-(CURDATE() - INTERVAL 1 DAY, 'PRESENT', '08:50:00', '15:30:00', 'Late entry', 'RFID', 4, NULL, NULL, NULL),
-(CURDATE(), 'PRESENT', '08:45:00', '15:30:00', 'On time', 'Manual', 4, NULL, NULL, NULL),
-
--- Student 5 (ADM005 - Student 5)
-(CURDATE() - INTERVAL 4 DAY, 'PRESENT', '08:45:00', '15:30:00', 'On time', 'Manual', 5, NULL, NULL, NULL),
-(CURDATE() - INTERVAL 3 DAY, 'PRESENT', '08:40:00', '15:30:00', 'Good attendance', 'RFID', 5, NULL, NULL, NULL),
-(CURDATE() - INTERVAL 2 DAY, 'ABSENT', NULL, NULL, 'Family emergency', 'Manual', 5, CURDATE() - INTERVAL 2 DAY, CURDATE() - INTERVAL 2 DAY, 'Rejected'),
-(CURDATE() - INTERVAL 1 DAY, 'PRESENT', '08:50:00', '15:30:00', 'Late entry', 'Biometric', 5, NULL, NULL, NULL),
-(CURDATE(), 'PRESENT', '08:45:00', '15:30:00', 'On time', 'Manual', 5, NULL, NULL, NULL);
-
-----------
-----LeaveType
-INSERT INTO leave_types (name) VALUES
-('Medical Leave'),
-('Casual Leave'),
-('Maternity Leave'),
-('Sick Leave'),
-('Mandatory Leave'),
-('Half Day Leave'),
-('Holiday'),
-('Paternity Leave'),
-('Study Leave'),
-('Bereavement Leave');
-------------------
----Staff Attendance-------
-
-----------
-
--- Assuming staff IDs 1–3 exist in staff_members table
-
-INSERT INTO staff_attendance (
-    attendance_date, status, entry_time, exit_time, note, source, staff_id
-) VALUES
--- Staff 1 (Employee ID: 9001)
-(CURDATE() - INTERVAL 4 DAY, 'PRESENT', '09:00:00', '17:00:00', 'On time', 'Manual', 1),
-(CURDATE() - INTERVAL 3 DAY, 'LATE', '09:30:00', '17:00:00', 'Traffic delay', 'RFID', 1),
-(CURDATE() - INTERVAL 2 DAY, 'ABSENT', NULL, NULL, 'Medical leave', 'Manual', 1),
-(CURDATE() - INTERVAL 1 DAY, 'PRESENT', '09:05:00', '17:00:00', 'Slightly late', 'Biometric', 1),
-(CURDATE(), 'PRESENT', '09:00:00', '17:00:00', 'On time', 'Manual', 1),
-
--- Staff 2 (Employee ID: 9002)
-(CURDATE() - INTERVAL 4 DAY, 'PRESENT', '09:10:00', '17:00:00', 'Good attendance', 'RFID', 2),
-(CURDATE() - INTERVAL 3 DAY, 'HALF_DAY', '09:00:00', '13:00:00', 'Half day leave', 'Manual', 2),
-(CURDATE() - INTERVAL 2 DAY, 'PRESENT', '09:00:00', '17:00:00', 'On time', 'Biometric', 2),
-(CURDATE() - INTERVAL 1 DAY, 'PRESENT', '09:15:00', '17:00:00', 'Late entry', 'Manual', 2),
-(CURDATE(), 'PRESENT', '09:00:00', '17:00:00', 'On time', 'RFID', 2),
-
--- Staff 3 (Employee ID: 9003)
-(CURDATE() - INTERVAL 4 DAY, 'HOLIDAY', NULL, NULL, 'School holiday', 'Manual', 3),
-(CURDATE() - INTERVAL 3 DAY, 'PRESENT', '09:00:00', '17:00:00', 'On time', 'Biometric', 3),
-(CURDATE() - INTERVAL 2 DAY, 'PRESENT', '09:05:00', '17:00:00', 'Slightly late', 'RFID', 3),
-(CURDATE() - INTERVAL 1 DAY, 'ABSENT', NULL, NULL, 'Family emergency', 'Manual', 3),
-(CURDATE(), 'PRESENT', '09:00:00', '17:00:00', 'On time', 'Manual', 3);
-
-----------------
---------StaffLeave-----
-
--------------
-
--- Assuming staff IDs 1–3 exist in staff_members table
-
-INSERT INTO staff_leaves (
-    leave_type, start_date, end_date, reason, status, staff_id
-) VALUES
--- Staff 1 (Employee ID: 9001)
-('Medical Leave', CURDATE() - INTERVAL 7 DAY, CURDATE() - INTERVAL 6 DAY, 'Fever and rest advised', 'Approved', 1),
-('Casual Leave', CURDATE() - INTERVAL 3 DAY, CURDATE() - INTERVAL 3 DAY, 'Personal work', 'Pending', 1),
-
--- Staff 2 (Employee ID: 9002)
-('Sick Leave', CURDATE() - INTERVAL 5 DAY, CURDATE() - INTERVAL 4 DAY, 'Flu symptoms', 'Rejected', 2),
-('Maternity Leave', CURDATE() + INTERVAL 10 DAY, CURDATE() + INTERVAL 40 DAY, 'Maternity period', 'Pending', 2),
-
--- Staff 3 (Employee ID: 9003)
-('Casual Leave', CURDATE() - INTERVAL 2 DAY, CURDATE() - INTERVAL 2 DAY, 'Family function', 'Approved', 3),
-('Mandatory Leave', CURDATE() + INTERVAL 15 DAY, CURDATE() + INTERVAL 16 DAY, 'School policy leave', 'Pending', 3);
-
------------------
-
--- Exam Groups
-INSERT INTO exam_group (name)
-VALUES
-('Midterm Exams'),
-('Final Exams'),
-('Unit Tests')
-ON DUPLICATE KEY UPDATE name = VALUES(name);
-
---------------------
-
--- Exam Types linked to ExamGroup
-INSERT INTO exam_type (type_name, exam_group_id)
-VALUES
-('Midterm', (SELECT id FROM exam_group WHERE name='Midterm Exams' LIMIT 1)),
-('Final', (SELECT id FROM exam_group WHERE name='Final Exams' LIMIT 1)),
-('Unit Test', (SELECT id FROM exam_group WHERE name='Unit Tests' LIMIT 1))
-ON DUPLICATE KEY UPDATE type_name = VALUES(type_name),
-exam_group_id = VALUES(exam_group_id);
-
-
-------------------------------
-
--- Exam Subjects mapped to Class + Subject + ExamType
-INSERT INTO exam_subject (subject_id, class_id, exam_type_id, max_marks)
-VALUES
--- Class 10 Mathematics Midterm
-((SELECT id FROM subjects WHERE name='Mathematics' LIMIT 1),
- (SELECT id FROM classes WHERE class_name='CLASS_10' LIMIT 1),
- (SELECT id FROM exam_type WHERE type_name='Midterm' LIMIT 1),
- 100),
-
--- Class 9 English Final
-((SELECT id FROM subjects WHERE name='English' LIMIT 1),
- (SELECT id FROM classes WHERE class_name='CLASS_9' LIMIT 1),
- (SELECT id FROM exam_type WHERE type_name='Final' LIMIT 1),
- 80),
-
--- Class 8 Physics Unit Test
-((SELECT id FROM subjects WHERE name='Physics' LIMIT 1),
- (SELECT id FROM classes WHERE class_name='CLASS_8' LIMIT 1),
- (SELECT id FROM exam_type WHERE type_name='Unit Test' LIMIT 1),
- 50)
-ON DUPLICATE KEY UPDATE
-subject_id = VALUES(subject_id),
-class_id = VALUES(class_id),
-exam_type_id = VALUES(exam_type_id),
-max_marks = VALUES(max_marks);
-
-
-
-----------------------------
-
--- Student Exam Marks
-INSERT INTO student_exam (student_id, exam_subject_id, marks_obtained)
-VALUES
--- ADM001 (Ayaan Kumar) Class 10 Midterm Mathematics
-((SELECT id FROM students WHERE admission_number='ADM001' LIMIT 1),
- (SELECT id FROM exam_subject es
-    JOIN subjects s ON es.subject_id=s.id
-    JOIN classes c ON es.class_id=c.id
-    JOIN exam_type et ON es.exam_type_id=et.id
-    WHERE s.name='Mathematics' AND c.class_name='CLASS_10' AND et.type_name='Midterm' LIMIT 1),
- 78),
-
--- ADM002 (Ananya Devi) Class 9 Final English
-((SELECT id FROM students WHERE admission_number='ADM002' LIMIT 1),
- (SELECT id FROM exam_subjects es
-    JOIN subjects s ON es.subject_id=s.id
-    JOIN classes c ON es.class_id=c.id
-    JOIN exam_type et ON es.exam_type_id=et.id
-    WHERE s.name='English' AND c.class_name='CLASS_9' AND et.type_name='Final' LIMIT 1),
- 85)
-ON DUPLICATE KEY UPDATE
-marks_obtained = VALUES(marks_obtained);
-------------
--- Re-enable foreign key checks
 SET FOREIGN_KEY_CHECKS = 1;

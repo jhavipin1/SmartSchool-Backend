@@ -12,9 +12,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TeacherRequestDto {
-    @Valid
-    @NotNull(message = "Staff details are required")
-    private StaffRequestDto staff;
+
+    @NotNull(message = "Staff ID is required")
+    private Long staffId;
 
     private List<Long> subjectIds;
 }

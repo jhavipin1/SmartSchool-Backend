@@ -35,33 +35,14 @@ public class TeacherServiceImpl implements TeacherService {
     @Override
     @Transactional
     public TeacherResponseDto createTeacher(TeacherRequestDto dto) {
-        User user = userRepository.findById(Math.toIntExact(dto.getStaff().getUserId()))
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        // ✅ Fetch Staff
+        Staff staff = staffRepository.findById(dto.getStaffId())
+                .orElseThrow(() -> new RuntimeException("Staff not found"));
 
-        // Validate teacher role
-        boolean isTeacherRole = user.getRole() != null
-                && user.getRole().getName() == RoleName.TEACHER;
-
-        if (!isTeacherRole) {
-            throw new IllegalArgumentException("User must have TEACHER role to be registered as a teacher.");
+        User user = staff.getUser();
+        if (user == null || user.getRole() == null || user.getRole().getName() != RoleName.TEACHER) {
+            throw new IllegalArgumentException("Staff must be linked to a User with TEACHER role.");
         }
-
-        Department department = departmentRepository.findById(dto.getStaff().getDepartmentId())
-                .orElseThrow(() -> new RuntimeException("Department not found"));
-
-        Designation designation = designationRepository.findById(dto.getStaff().getDesignationId())
-                .orElseThrow(() -> new RuntimeException("Designation not found"));
-
-        Staff staff = Staff.builder()
-                .employeeId(dto.getStaff().getEmployeeId())
-                .firstName(dto.getStaff().getFirstName())
-                .lastName(dto.getStaff().getLastName())
-                .phone(dto.getStaff().getPhone())
-                .joiningDate(dto.getStaff().getJoiningDate())
-                .department(department)
-                .designation(designation)
-                .user(user)
-                .build();
 
         List<Subject> subjects = (dto.getSubjectIds() != null && !dto.getSubjectIds().isEmpty())
                 ? subjectRepository.findAllById(dto.getSubjectIds())

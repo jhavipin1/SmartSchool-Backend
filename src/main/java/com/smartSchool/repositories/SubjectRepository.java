@@ -23,17 +23,17 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
     List<Subject> findByExamType_Id(Long examTypeId);
 
     // Fetch subjects assigned to a specific Class and Section
-    List<Subject> findByClassName_IdAndSection_Id(Long classId, Long sectionId);
+    List<Subject> findByClassName_Id(Long classId);
 
     // Fetch subjects filtered by ExamType, Class, and Section
-    List<Subject> findByExamType_IdAndClassName_IdAndSection_Id(
-            Long examTypeId, Long classId, Long sectionId);
+    List<Subject> findByExamType_IdAndClassName_Id(
+            Long examTypeId, Long classId);
 
     // Find a specific subject mapping by ID, ExamType, Class, and Section
-    Optional<Subject> findByIdAndExamType_IdAndClassName_IdAndSection_Id(
-            Long id, Long examTypeId, Long classId, Long sectionId);
+    Optional<Subject> findByIdAndExamType_IdAndClassName_Id(
+            Long id, Long examTypeId, Long classId);
 
     // Check if subject mapping exists for an ExamType, Class, Section, and Name
-    boolean existsByNameAndExamType_IdAndClassName_IdAndSection_Id(
-            String name, Long examTypeId, Long classId, Long sectionId);
+    boolean existsByNameAndExamType_IdAndClassName_Id(
+            String name, Long examTypeId, Long classId);
 }

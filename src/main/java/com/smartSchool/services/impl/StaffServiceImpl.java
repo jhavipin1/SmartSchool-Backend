@@ -4,10 +4,12 @@ import com.smartSchool.dtos.staff.StaffRequestDto;
 import com.smartSchool.dtos.staff.StaffResponseDto;
 import com.smartSchool.dtos.staff.StaffStatusUpdateDto;
 import com.smartSchool.entities.*;
+import com.smartSchool.enums.RoleName;
 import com.smartSchool.repositories.*;
 import com.smartSchool.services.StaffService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,21 +25,63 @@ public class StaffServiceImpl implements StaffService {
     private final DepartmentRepository departmentRepository;
     private final DesignationRepository designationRepository;
     private final UserRepository userRepository;
-    private final TeacherRepository teacherRepository; // Injected TeacherRepository
+    private final TeacherRepository teacherRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public StaffResponseDto createStaff(StaffRequestDto dto) {
-        Staff staff = mapToEntity(dto);
+
+        // ✅ Check for duplicate email
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new IllegalArgumentException("Email already exists: " + dto.getEmail());
+        }
+
+        // ✅ Check for duplicate username (employeeId)
+        if (userRepository.existsByUsername(dto.getEmployeeId())) {
+            throw new IllegalArgumentException("Username already exists: " + dto.getEmployeeId());
+        }
+
+        User user = User.builder()
+                .fullName(dto.getFirstName() + " " + dto.getLastName())
+                .username(dto.getEmail())
+                .password(passwordEncoder.encode(dto.getPhone()))
+                .role(roleRepository.findByName(RoleName.valueOf(dto.getRole().name()))
+                        .orElseThrow(() -> new RuntimeException("Role " + dto.getRole() + " not found")))
+                .email(dto.getEmail())
+                .active(true)
+                .build();
+
+        user = userRepository.save(user);
+
+
+
+
+        // 🔹 Create Staff linked to User
+        Staff staff = Staff.builder()
+                .employeeId(dto.getEmployeeId())
+                .firstName(dto.getFirstName())
+                .lastName(dto.getLastName())
+                .phone(dto.getPhone())
+                .joiningDate(dto.getJoiningDate())
+                .department(departmentRepository.findById(dto.getDepartmentId())
+                        .orElseThrow(() -> new RuntimeException("Department not found")))
+                .designation(designationRepository.findById(dto.getDesignationId())
+                        .orElseThrow(() -> new RuntimeException("Designation not found")))
+                .user(user)
+                .build();
+
         Staff savedStaff = staffRepository.save(staff);
 
-        // Check if designation or role indicates Teacher
+        // ✅ If Staff is Teacher → auto-create Teacher record
         if (isTeacher(savedStaff)) {
             createTeacherRecordIfNotExists(savedStaff);
         }
 
         return mapToResponse(savedStaff);
     }
+
 
     @Override
     @Transactional
@@ -53,8 +97,7 @@ public class StaffServiceImpl implements StaffService {
                 .orElseThrow(() -> new RuntimeException("Department not found")));
         staff.setDesignation(designationRepository.findById(dto.getDesignationId())
                 .orElseThrow(() -> new RuntimeException("Designation not found")));
-        staff.setUser(userRepository.findById(Math.toIntExact(dto.getUserId()))
-                .orElseThrow(() -> new RuntimeException("User not found")));
+
 
         Staff updatedStaff = staffRepository.save(staff);
 
@@ -84,8 +127,19 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional
     public void deleteStaff(Long id) {
-        staffRepository.deleteById(id);
+        Staff staff = staffRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Staff not found"));
+
+        // ✅ Explicit deletion of Teacher record if Staff is Teacher
+        if (isTeacher(staff)) {
+            teacherRepository.findByStaffId(staff.getId())
+                    .ifPresent(teacherRepository::delete);
+        }
+
+        staffRepository.delete(staff);
     }
+
+
 
     @Override
     @Transactional
@@ -98,20 +152,26 @@ public class StaffServiceImpl implements StaffService {
 
     // Helper method to determine if Staff is a Teacher
     private boolean isTeacher(Staff staff) {
-        if (staff.getDesignation() != null && staff.getDesignation().getDesignationName() != null) {
-            return staff.getDesignation().getDesignationName().equalsIgnoreCase("Teacher");
+        if (staff.getDesignation() != null
+                && staff.getDesignation().getDesignationName() != null
+                && staff.getUser() != null
+                && staff.getUser().getRole() != null) {
+
+            return staff.getUser().getRole().getName() == RoleName.TEACHER;
         }
         return false;
     }
 
-    // Helper method to create Teacher record idempotently
+
     private void createTeacherRecordIfNotExists(Staff staff) {
         boolean teacherExists = teacherRepository.existsByStaffId(staff.getId());
         if (!teacherExists) {
+
             Teacher teacher = Teacher.builder()
                     .staff(staff)
                     .subjects(Collections.emptyList())
                     .build();
+
             teacherRepository.save(teacher);
         }
     }
@@ -142,8 +202,6 @@ public class StaffServiceImpl implements StaffService {
                         .orElseThrow(() -> new RuntimeException("Department not found")))
                 .designation(designationRepository.findById(dto.getDesignationId())
                         .orElseThrow(() -> new RuntimeException("Designation not found")))
-                .user(userRepository.findById(Math.toIntExact(dto.getUserId()))
-                        .orElseThrow(() -> new RuntimeException("User not found")))
                 .build();
     }
 }

@@ -13,6 +13,5 @@ public class StudentExamDTO {
     private Long id;
     private Long studentId;
     private Long examSubjectId;
-    private Long sectionId;
     private Integer marksObtained;
 }

@@ -16,6 +16,8 @@ public class StaffResponseDto {
     private String firstName;
     private String lastName;
     private String phone;
+    private String email;
+    private String role;
     private String departmentName;
     private String designationName;
     private LocalDate joiningDate;

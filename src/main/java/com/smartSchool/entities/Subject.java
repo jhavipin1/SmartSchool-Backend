@@ -19,20 +19,19 @@ public class Subject {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Subject name is required")
-    @Column(name = "name", nullable = false, length = 100)
+    @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(name = "code", length = 50)
+    @Column(length = 50)
     private String code;
 
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "active")
+    @Column
     private Boolean active = true;
 
-    @Column(name = "max_marks", nullable = false)
+    @Column(name = "max_marks")
     private Integer maxMarks;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -40,16 +39,6 @@ public class Subject {
     private ClassName className;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "section_id")
-    private Section section;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_type_id", nullable = false)
     private ExamType examType;
-
-    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @Builder.Default
-    private List<StudentExam> studentExams = new ArrayList<>();
 }

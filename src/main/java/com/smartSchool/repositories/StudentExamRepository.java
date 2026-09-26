@@ -18,15 +18,14 @@ public interface StudentExamRepository extends JpaRepository<StudentExam, Long> 
     // 2. Fetch all marks recorded for a specific student
     List<StudentExam> findByStudent_Id(Long studentId);
 
-    // 3. Results filtered by Class + Section + Subject
-    List<StudentExam> findBySubject_ClassName_IdAndSubject_Section_IdAndSubject_Id(
-            Long classId, Long sectionId, Long subjectId);
+    // Results filtered by Class + Subject
+    List<StudentExam> findBySubject_ClassName_IdAndSubject_Id(Long classId, Long subjectId);
 
-    // 4. Results filtered by ExamType + Class + Section + Subject
-    List<StudentExam> findBySubject_ExamType_IdAndSubject_ClassName_IdAndSubject_Section_IdAndSubject_Id(
-            Long examTypeId, Long classId, Long sectionId, Long subjectId);
+    // Results filtered by ExamType + Class + Subject
+    List<StudentExam> findBySubject_ExamType_IdAndSubject_ClassName_IdAndSubject_Id(
+            Long examTypeId, Long classId, Long subjectId);
 
-    // 5. Fetch all student results for an Exam Type and Class across subjects
+    // Fetch all student results for an Exam Type and Class across subjects
     List<StudentExam> findBySubject_ExamType_IdAndSubject_ClassName_Id(Long examTypeId, Long classId);
 
     // 6. Check if student marks have already been recorded for a subject
@@ -36,14 +35,12 @@ public interface StudentExamRepository extends JpaRepository<StudentExam, Long> 
     @Query("SELECT se FROM StudentExam se " +
             "JOIN FETCH se.student s " +
             "JOIN FETCH se.subject sub " +
-            "LEFT JOIN FETCH sub.className " +
-            "LEFT JOIN FETCH sub.section " +
-            "LEFT JOIN FETCH sub.examType " +
-            "WHERE sub.examType.id = :examTypeId " +
-            "AND sub.className.id = :classId " +
-            "AND sub.section.id = :sectionId")
-    List<StudentExam> findFullResultsByExamTypeClassAndSection(
+            "JOIN FETCH sub.className cls " +
+            "JOIN FETCH sub.examType et " +
+            "WHERE et.id = :examTypeId " +
+            "AND cls.id = :classId")
+    List<StudentExam> findFullResultsByExamTypeClass(
             @Param("examTypeId") Long examTypeId,
-            @Param("classId") Long classId,
-            @Param("sectionId") Long sectionId);
+            @Param("classId") Long classId);
+
 }

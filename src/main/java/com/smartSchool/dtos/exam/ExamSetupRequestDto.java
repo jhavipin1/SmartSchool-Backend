@@ -15,6 +15,5 @@ public class ExamSetupRequestDto {
     private String subjectName;
     private Integer maxMarks;
     private String className;
-    private String sectionName;
 }
 

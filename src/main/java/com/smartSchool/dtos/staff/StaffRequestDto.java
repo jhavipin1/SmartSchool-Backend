@@ -1,5 +1,6 @@
 package com.smartSchool.dtos.staff;
 
+import com.smartSchool.enums.RoleName;
 import lombok.*;
 import java.time.LocalDate;
 
@@ -27,6 +28,8 @@ public class StaffRequestDto {
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be 10 digits")
     private String phone;
 
+    private String email;
+
     @NotNull(message = "Department ID is required")
     private Long departmentId;
 
@@ -36,6 +39,5 @@ public class StaffRequestDto {
     @PastOrPresent(message = "Joining date cannot be in the future")
     private LocalDate joiningDate;
 
-    @NotNull(message = "User ID is required")
-    private Long userId;
+    private RoleName role;
 }

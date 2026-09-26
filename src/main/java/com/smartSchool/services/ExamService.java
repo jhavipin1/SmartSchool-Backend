@@ -18,8 +18,8 @@ public interface ExamService {
     StudentExamDTO recordStudentMarks(StudentExamDTO dto);
     List<StudentExamDTO> recordBulkStudentMarks(List<StudentExamDTO> dtos);
 
-    List<StudentExamDTO> getResultsByClassSectionAndSubject(Long classId, Long sectionId, Long subjectId);
-    ExamTypeSummaryDTO getExamTypeSummary(Long examTypeId, Long classId, Long sectionId, Long subjectId);
+    List<StudentExamDTO> getResultsByClassAndSubject(Long classId, Long subjectId);
+    ExamTypeSummaryDTO getExamTypeSummary(Long examTypeId, Long classId, Long subjectId);
 
     ExamSubjectDTO createFullExamSetup(ExamSetupRequestDto dto);
     List<ExamSubjectDTO> createBulkExamSetup(ExamSetupBulkRequestDto bulkDto);

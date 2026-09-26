@@ -13,7 +13,6 @@ public class ExamSubjectDTO {
     private Long id;
     private Long subjectId;
     private Long classId;
-    private Long sectionId;
     private Long examTypeId;
     private Integer maxMarks;
 }

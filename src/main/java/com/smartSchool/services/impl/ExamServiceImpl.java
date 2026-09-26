@@ -79,13 +79,10 @@ public class ExamServiceImpl implements ExamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + dto.getSubjectId()));
         ClassName className = classRepo.findById(dto.getClassId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found with id: " + dto.getClassId()));
-        Section section = sectionRepo.findById(dto.getSectionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Section not found with id: " + dto.getSectionId()));
         ExamType examType = examTypeRepo.findById(dto.getExamTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("ExamType not found with id: " + dto.getExamTypeId()));
 
         subject.setClassName(className);
-        subject.setSection(section);
         subject.setExamType(examType);
         subject.setMaxMarks(dto.getMaxMarks());
 
@@ -95,7 +92,6 @@ public class ExamServiceImpl implements ExamService {
                 subject.getId(),
                 subject.getId(),
                 className.getId(),
-                section.getId(),
                 examType.getId(),
                 subject.getMaxMarks()
         );
@@ -136,7 +132,6 @@ public class ExamServiceImpl implements ExamService {
                 studentExam.getId(),
                 student.getId(),
                 subject.getId(),
-                subject.getSection() != null ? subject.getSection().getId() : null,
                 studentExam.getMarksObtained()
         );
     }
@@ -148,29 +143,28 @@ public class ExamServiceImpl implements ExamService {
     }
 
     @Override
-    public List<StudentExamDTO> getResultsByClassSectionAndSubject(Long classId, Long sectionId, Long subjectId) {
+    public List<StudentExamDTO> getResultsByClassAndSubject(Long classId, Long subjectId) {
         List<StudentExam> studentExams = studentExamRepo
-                .findBySubject_ClassName_IdAndSubject_Section_IdAndSubject_Id(classId, sectionId, subjectId);
+                .findBySubject_ClassName_IdAndSubject_Id(classId, subjectId);
 
         return studentExams.stream()
                 .map(se -> new StudentExamDTO(
                         se.getId(),
                         se.getStudent().getId(),
                         se.getSubject().getId(),
-                        se.getSubject().getSection() != null ? se.getSubject().getSection().getId() : null,
                         se.getMarksObtained()
                 ))
                 .toList();
     }
 
     @Override
-    public ExamTypeSummaryDTO getExamTypeSummary(Long examTypeId, Long classId, Long sectionId, Long subjectId) {
+    public ExamTypeSummaryDTO getExamTypeSummary(Long examTypeId, Long classId, Long subjectId) {
         List<StudentExam> studentExams = studentExamRepo
-                .findBySubject_ExamType_IdAndSubject_ClassName_IdAndSubject_Section_IdAndSubject_Id(
-                        examTypeId, classId, sectionId, subjectId);
+                .findBySubject_ExamType_IdAndSubject_ClassName_IdAndSubject_Id(
+                        examTypeId, classId, subjectId);
 
         if (studentExams.isEmpty()) {
-            return new ExamTypeSummaryDTO(examTypeId, "N/A", classId, sectionId, subjectId, 0.0, 0, 0);
+            return new ExamTypeSummaryDTO(examTypeId, "N/A", classId, subjectId, 0.0, 0, 0);
         }
 
         Double avg = studentExams.stream().mapToInt(StudentExam::getMarksObtained).average().orElse(0.0);
@@ -179,7 +173,7 @@ public class ExamServiceImpl implements ExamService {
 
         String examTypeName = studentExams.get(0).getSubject().getExamType().getTypeName();
 
-        return new ExamTypeSummaryDTO(examTypeId, examTypeName, classId, sectionId, subjectId, avg, max, min);
+        return new ExamTypeSummaryDTO(examTypeId, examTypeName, classId, subjectId, avg, max, min);
     }
 
     @Override
@@ -194,9 +188,6 @@ public class ExamServiceImpl implements ExamService {
         ClassName classEntity = classRepo.findByClassName(dto.getClassName())
                 .orElseGet(() -> classRepo.save(ClassName.builder().className(dto.getClassName()).build()));
 
-        Section section = sectionRepo.findBySectionNameAndClassName_Id(dto.getSectionName(), classEntity.getId())
-                .orElseGet(() -> sectionRepo.save(Section.builder().sectionName(dto.getSectionName()).className(classEntity).build()));
-
         Subject subject = subjectRepo.findByName(dto.getSubjectName())
                 .orElseGet(() -> subjectRepo.save(
                         Subject.builder()
@@ -206,7 +197,6 @@ public class ExamServiceImpl implements ExamService {
                 ));
 
         subject.setClassName(classEntity);
-        subject.setSection(section);
         subject.setExamType(examType);
         subject.setMaxMarks(dto.getMaxMarks());
 
@@ -216,7 +206,6 @@ public class ExamServiceImpl implements ExamService {
                 subject.getId(),
                 subject.getId(),
                 classEntity.getId(),
-                section.getId(),
                 examType.getId(),
                 subject.getMaxMarks()
         );

@@ -14,11 +14,13 @@ import com.smartSchool.repositories.StudentRepository;
 import com.smartSchool.services.IssueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // Added import
 
 import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class IssueServiceImpl implements IssueService {
 
     private final StudentRepository studentRepo;
@@ -88,4 +90,3 @@ public class IssueServiceImpl implements IssueService {
                 .build();
     }
 }
-

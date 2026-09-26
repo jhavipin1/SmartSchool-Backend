@@ -73,22 +73,21 @@ public class ExamController {
         return ResponseEntity.status(HttpStatus.CREATED).body(examService.recordBulkStudentMarks(dtos));
     }
 
-    @GetMapping("/results/{classId}/{sectionId}/{subjectId}")
-    public ResponseEntity<List<StudentExamDTO>> getResultsByClassSectionAndSubject(
+    @GetMapping("/results/{classId}/{subjectId}")
+    public ResponseEntity<List<StudentExamDTO>> getResultsByClassAndSubject(
             @PathVariable Long classId,
-            @PathVariable Long sectionId,
             @PathVariable Long subjectId) {
-        return ResponseEntity.ok(examService.getResultsByClassSectionAndSubject(classId, sectionId, subjectId));
+        return ResponseEntity.ok(examService.getResultsByClassAndSubject(classId, subjectId));
     }
 
-    @GetMapping("/summary/{examTypeId}/{classId}/{sectionId}/{subjectId}")
+    @GetMapping("/summary/{examTypeId}/{classId}/{subjectId}")
     public ResponseEntity<ExamTypeSummaryDTO> getExamTypeSummary(
             @PathVariable Long examTypeId,
             @PathVariable Long classId,
-            @PathVariable Long sectionId,
             @PathVariable Long subjectId) {
-        return ResponseEntity.ok(examService.getExamTypeSummary(examTypeId, classId, sectionId, subjectId));
+        return ResponseEntity.ok(examService.getExamTypeSummary(examTypeId, classId, subjectId));
     }
+
 
     // --- BULK / FULL SETUP ENDPOINTS ---
     @PostMapping("/setup")
