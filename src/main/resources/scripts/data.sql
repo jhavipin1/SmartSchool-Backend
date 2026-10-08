@@ -12,17 +12,7 @@ VALUES
     ('RECEPTIONIST', 'Receptionist role for front-desk visitor management')
 ON DUPLICATE KEY UPDATE description=VALUES(description);
 
-INSERT INTO users (full_name, username, email, password, active, role_id)
-VALUES
-    ('Super Admin', 'superadmin', 'superadmin@mail.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'SUPER_ADMIN')),
-    ('System Admin', 'admin', 'admin@mail.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'ADMIN')),
-    ('Amit Sharma', 'student', 'student@mail.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'STUDENT')),
-    ('Dr. Rajesh Verma', 'teacher', 'teacher@mail.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'TEACHER')),
-    ('Suresh Sharma', 'parent', 'parent@mail.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'PARENT')),
-    ('Ramesh Gupta', 'accountant', 'accountant@mail.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'ACCOUNTANT')),
-    ('Priya Singh', 'librarian', 'librarian@mail.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'LIBRARIAN')),
-    ('Anita Roy', 'receptionist', 'receptionist@mail.com', '$2a$10$e.w2X9C5/TzQ0s7vS90uuegM14KkYvN2Gj.A65QdM3aR4QY19aK1q', true, (SELECT id FROM roles WHERE name = 'RECEPTIONIST'))
-ON DUPLICATE KEY UPDATE email=VALUES(email);
+
 
 -- Insert Classes
 INSERT INTO classes (class_name)

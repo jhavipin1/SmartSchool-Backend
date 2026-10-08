@@ -54,4 +54,6 @@ public class Book {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rack_code", referencedColumnName = "rack_code")
     private Rack rack;
+
+
 }

@@ -5,7 +5,13 @@ import com.smartSchool.dtos.library.BookResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 public interface BookService {
+
+    List<BookResponseDto> getAllBooksUnpaginated();
+
+    Page<BookResponseDto> getAllBooks(Pageable pageable);
 
     BookResponseDto addBook(BookRequestDto request);
 

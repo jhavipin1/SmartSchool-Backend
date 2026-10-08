@@ -19,6 +19,7 @@ public class BookRequestDto {
     private String author;
     private String subject;
     private String rackNumber;
+    private String rackCode;
     private Integer qty;
     private Double price;
     private LocalDate postDate;

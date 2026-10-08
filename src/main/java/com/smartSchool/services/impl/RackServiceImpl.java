@@ -14,12 +14,29 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class RackServiceImpl implements RackService {
 
     private final RackRepository rackRepository;
     private final BookRepository bookRepository;
+
+    @Override
+    public List<RackDto> getAllRacks() {
+        return rackRepository.findAll()
+                .stream()
+                .map(this::convertToDto)
+                .toList();
+    }
+
+    private RackDto convertToDto(Rack rack) {
+        RackDto dto = new RackDto();
+        dto.setRackCode(rack.getRackCode());
+        dto.setLocation(rack.getLocation());
+        return dto;
+    }
 
     @Override
     public RackDto addRack(RackDto dto) {

@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/sections")
+@CrossOrigin(origins = "http://localhost:4200")
 public class SectionController {
 
     private final SectionService sectionService;

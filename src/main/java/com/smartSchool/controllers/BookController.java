@@ -8,6 +8,7 @@ import com.smartSchool.services.RackService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,10 +18,23 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/books")
+@CrossOrigin(origins = "http://localhost:4200")
 @RequiredArgsConstructor
 public class BookController {
 
     private final BookService bookService;
+
+    @GetMapping("/all")
+    @ResponseStatus(HttpStatus.OK)
+    public List<BookResponseDto> getAllBooksUnpaginated() {
+        return bookService.getAllBooksUnpaginated();
+    }
+
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public Page<BookResponseDto> getAllBooks(@PageableDefault(size = 25) Pageable pageable) {
+        return bookService.getAllBooks(pageable);
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
